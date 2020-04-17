@@ -69,11 +69,13 @@ do_set_temporary(Evaluation_Stack& stack, bool assign, XValT&& xval)
     if(assign) {
       // Write the value to the top refernce.
       ref.open() = ::std::forward<XValT>(xval);
-      return ref;
     }
-    // Replace the top reference with a temporary reference to the value.
-    Reference_root::S_temporary xref = { ::std::forward<XValT>(xval) };
-    return ref = ::std::move(xref);
+    else {
+      // Replace the top reference with a temporary reference to the value.
+      Reference_root::S_temporary xref = { ::std::forward<XValT>(xval) };
+      ref = ::std::move(xref);
+    }
+    return ref;
   }
 
 Reference&
@@ -125,6 +127,7 @@ do_evaluate_branch(const AVMC_Queue& queue, bool assign, Executive_Context& ctx)
     return queue.execute(ctx);
   }
 
+#if 0/////////////////////////////////////////////////
 template<size_t nqsT>
 struct Pv_queues_fixed
   {
@@ -2930,6 +2933,7 @@ do_import_call(Executive_Context& ctx, ParamU pu, const void* pv)
     return do_function_call_common(self, sloc, ctx, qtarget, ptc_aware_none, ::std::move(args));
   }
 
+#endif/////////////////////////////////////////////////
 }  // namespace
 
 opt<AIR_Node>
@@ -3156,11 +3160,26 @@ const
     }
   }
 
+    struct Sfn
+      {
+        static
+        AIR_Status
+        exec(Executive_Context& ctx, AVMC_Queue::Uparam uparam, const void* sparam)
+          {
+            ::printf("EXEC:  Up: %d, %d  Sp: %s\n", uparam.x16, uparam.x32, ((cow_string*)sparam)->c_str());
+            return air_status_next;
+          };
+      };
+
+
 bool
 AIR_Node::
-solidify(AVMC_Queue& queue, uint8_t ipass)
+solidify(AVMC_Queue& queue)
 const
   {
+    queue.append<Sfn::exec, nullptr>(AVMC_Queue::Symbols(), AVMC_Queue::Uparam{{12,34,56}}, cow_string("meow"));
+    return true;
+#if 0/////////////////////////////////////////////////
     switch(this->index()) {
       case index_clear_stack: {
         const auto& altr = this->m_stor.as<index_clear_stack>();
@@ -3856,6 +3875,7 @@ const
       default:
         ASTERIA_TERMINATE("invalid AIR node type (index `$1`)", this->index());
     }
+#endif /////////////////////////////////////////////////
   }
 
 Variable_Callback&
